@@ -6,6 +6,7 @@ import smbus
 import math
 import numpy as np
 import kalman
+import IMU_Kalman
 
 # 电源管理寄存器
 power_mgmt_1 = 0x6b
@@ -116,4 +117,20 @@ try:
 
         if abs(gz) < 1:  # 判断是否平稳
             # 如果平稳，输出当前角度
-            R = Roll.get
+            R = Roll.getKalmanAngle(get_roll(ax, ay, az), gx, dt)
+            P = Pitch.getKalmanAngle(get_pitch(ax, ay, az), gy, dt)
+            print(f"Roll: {R:.2f}, Pitch: {P:.2f}")
+        else:
+            # 如果不平稳，每500ms读取一次角度
+            time.sleep(0.5)
+            R = Roll.getKalmanAngle(get_roll(ax, ay, az), gx, dt)
+            P = Pitch.getKalmanAngle(get_pitch(ax, ay, az), gy, dt)
+            print(f"Roll: {R:.2f}, Pitch: {P:.2f}")
+            # 舵机操作时间400ms
+            time.sleep(0.4)
+
+        time_pre = time.time()  # 更新上次时间
+except KeyboardInterrupt:
+    for servo in servos:
+        servo.stop()
+    GPIO.cleanup()
